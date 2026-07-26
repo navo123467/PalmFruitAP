@@ -3,9 +3,18 @@ from PIL import Image
 import tensorflow as tf
 import numpy as np
 import io
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 model = tf.keras.models.load_model(
     "best_palm_model.keras"
