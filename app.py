@@ -1,11 +1,8 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi import FastAPI, UploadFile, File
+from PIL import Image
 import tensorflow as tf
 import numpy as np
-from PIL import Image
-import base64
 import io
-
 
 app = FastAPI()
 
@@ -22,49 +19,38 @@ classes = [
 ]
 
 
-class ImageRequest(BaseModel):
-    image:str
-
+@app.get("/")
+def home():
+    return {
+        "message": "Palm AI API Running"
+    }
 
 
 @app.post("/predict")
-async def predict(data:ImageRequest):
+async def predict(file: UploadFile = File(...)):
 
-    image_data = data.image.split(",")[1]
-
-
-    image_bytes = base64.b64decode(image_data)
-
+    image_bytes = await file.read()
 
     image = Image.open(
         io.BytesIO(image_bytes)
     )
 
-
     image = image.resize((224,224))
 
+    image = np.array(image)
 
-    image = np.array(image)/255.0
-
+    image = image / 255.0
 
     image = np.expand_dims(
         image,
         axis=0
     )
 
-
     prediction = model.predict(image)
 
-
-    index = np.argmax(prediction)
-
-
-    confidence = float(
-        prediction[0][index]*100
-    )
-
+    result = np.argmax(prediction)
 
     return {
-        "class":classes[index],
-        "confidence":round(confidence,2)
+        "prediction": classes[result],
+        "confidence": float(np.max(prediction))
     }
